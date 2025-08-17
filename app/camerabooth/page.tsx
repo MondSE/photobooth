@@ -61,6 +61,7 @@ export default function PhotoBooth() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      // Flip horizontally (mirror)
       ctx.translate(img.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(img, 0, 0);
@@ -71,12 +72,44 @@ export default function PhotoBooth() {
     };
   };
 
-  const downloadAll = () => {
-    photos.forEach((photo, index) => {
-      const link = document.createElement("a");
-      link.href = photo;
-      link.download = `photo-${index + 1}.png`;
-      link.click();
+  /** 📌 Create a vertical collage strip */
+  const downloadStrip = () => {
+    if (photos.length === 0) return;
+
+    const imgElements: HTMLImageElement[] = [];
+    let loaded = 0;
+
+    photos.forEach((src, i) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        imgElements[i] = img;
+        loaded++;
+        if (loaded === photos.length) {
+          // Once all images are loaded, build the strip
+          const width = Math.max(...imgElements.map((im) => im.width));
+          const height = imgElements.reduce((sum, im) => sum + im.height, 0);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          let y = 0;
+          imgElements.forEach((im) => {
+            ctx.drawImage(im, 0, y);
+            y += im.height;
+          });
+
+          const stripDataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = stripDataUrl;
+          link.download = "photobooth-strip.png";
+          link.click();
+        }
+      };
     });
   };
 
@@ -126,7 +159,7 @@ export default function PhotoBooth() {
           </button>
         </div>
 
-        {/* Preview Strip - doesn't affect camera */}
+        {/* Vertical Photo Strip Preview */}
         <div className="flex flex-col gap-4 items-center bg-gray-900 p-4 rounded-xl shadow-lg min-w-[180px]">
           {photos.length === 0 && (
             <p className="text-gray-400 text-sm">No photos yet</p>
@@ -141,10 +174,10 @@ export default function PhotoBooth() {
           ))}
           {photos.length > 0 && (
             <button
-              onClick={downloadAll}
+              onClick={downloadStrip}
               className="mt-2 bg-purple-600 px-6 py-2 rounded hover:bg-purple-700"
             >
-              💾 Download All
+              💾 Download Strip
             </button>
           )}
         </div>
