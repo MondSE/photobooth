@@ -4,8 +4,8 @@ import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
 
 const videoConstraints = {
-  width: 640,
-  height: 480,
+  width: 480,
+  height: 360,
   facingMode: "user",
 };
 
@@ -39,8 +39,7 @@ export default function PhotoBooth() {
         clearInterval(interval);
         setCountdown(null);
         capture(() => {
-          // Take next photo after a short delay
-          setTimeout(() => takeNextPhoto(index + 1), 500);
+          setTimeout(() => takeNextPhoto(index + 1), 800);
         });
       }
     }, 1000);
@@ -53,7 +52,6 @@ export default function PhotoBooth() {
     const screenshot = webcam.getScreenshot();
     if (!screenshot) return;
 
-    // Mirror the captured image
     const img = new Image();
     img.src = screenshot;
     img.onload = () => {
@@ -83,72 +81,74 @@ export default function PhotoBooth() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center p-6 gap-6">
-      {/* Camera */}
-      <div className="relative">
-        <Webcam
-          audio={false}
-          ref={webcamRef}
-          screenshotFormat="image/png"
-          videoConstraints={videoConstraints}
-          className="rounded-xl shadow-lg scale-x-[-1]"
-        />
+    <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+      <div className="flex flex-row gap-8">
+        {/* Camera Section - always visible */}
+        <div className="relative flex flex-col items-center gap-4">
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/png"
+            videoConstraints={videoConstraints}
+            className="rounded-xl shadow-lg scale-x-[-1]"
+          />
 
-        {/* Countdown Overlay */}
-        {countdown !== null && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-8xl font-bold">
-            {countdown}
+          {/* Countdown Overlay */}
+          {countdown !== null && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-8xl font-bold rounded-xl">
+              {countdown}
+            </div>
+          )}
+
+          {/* Mode Selection */}
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map((num) => (
+              <button
+                key={num}
+                onClick={() => setPhotoCount(num)}
+                disabled={isCapturing}
+                className={`px-4 py-2 rounded ${
+                  photoCount === num ? "bg-blue-600" : "bg-gray-600"
+                } hover:bg-blue-700 disabled:opacity-50`}
+              >
+                {num} Pic{num > 1 ? "s" : ""}
+              </button>
+            ))}
           </div>
-        )}
-      </div>
 
-      {/* Mode Selection */}
-      <div className="flex gap-3">
-        {[1, 2, 3, 4].map((num) => (
+          {/* Capture Button */}
           <button
-            key={num}
-            onClick={() => setPhotoCount(num)}
-            className={`px-4 py-2 rounded ${
-              photoCount === num ? "bg-blue-600" : "bg-gray-600"
-            } hover:bg-blue-700`}
+            onClick={startCountdown}
+            disabled={isCapturing}
+            className="bg-green-600 px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
           >
-            {num} Pic{num > 1 ? "s" : ""}
+            📸 Take {photoCount} Photo{photoCount > 1 ? "s" : ""}
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Capture Button */}
-      <button
-        onClick={startCountdown}
-        disabled={isCapturing}
-        className="bg-green-600 px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-      >
-        📸 Take {photoCount} Photo{photoCount > 1 ? "s" : ""}
-      </button>
-
-      {/* Photo Preview */}
-      {photos.length > 0 && (
-        <div className="flex flex-wrap gap-4 justify-center mt-4">
+        {/* Preview Strip - doesn't affect camera */}
+        <div className="flex flex-col gap-4 items-center bg-gray-900 p-4 rounded-xl shadow-lg min-w-[180px]">
+          {photos.length === 0 && (
+            <p className="text-gray-400 text-sm">No photos yet</p>
+          )}
           {photos.map((src, idx) => (
             <img
               key={idx}
               src={src}
               alt={`Captured ${idx + 1}`}
-              className="w-40 rounded-xl shadow-lg"
+              className="w-40 rounded-md shadow-md"
             />
           ))}
+          {photos.length > 0 && (
+            <button
+              onClick={downloadAll}
+              className="mt-2 bg-purple-600 px-6 py-2 rounded hover:bg-purple-700"
+            >
+              💾 Download All
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Download Button */}
-      {photos.length > 0 && (
-        <button
-          onClick={downloadAll}
-          className="bg-purple-600 px-6 py-2 rounded hover:bg-purple-700"
-        >
-          💾 Download All
-        </button>
-      )}
+      </div>
     </main>
   );
 }
