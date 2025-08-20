@@ -30,6 +30,7 @@ export default function PhotoBooth() {
       stream.getTracks().forEach((track) => track.stop()); // stop temp stream
       setCameraAllowed(true);
     } catch (err) {
+      console.error("Camera error:", err);
       setCameraError(
         "Camera access denied. Please enable it in browser settings."
       );
