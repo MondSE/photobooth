@@ -11,175 +11,320 @@ const videoConstraints = {
 
 export default function PhotoBooth() {
   const webcamRef = useRef<Webcam>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [cameraAllowed, setCameraAllowed] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [photoCount, setPhotoCount] = useState<number>(1);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [numPhotos, setNumPhotos] = useState(1);
+  const [theme, setTheme] = useState("white");
+  const [customBg, setCustomBg] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string | null>(null);
+  const [caption, setCaption] = useState("My PhotoBooth ✨");
 
-  const startCountdown = () => {
-    setPhotos([]); // reset previous photos
-    setIsCapturing(true);
-    takeNextPhoto(0);
-  };
-
-  const takeNextPhoto = (index: number) => {
-    if (index >= photoCount) {
-      setIsCapturing(false);
-      return;
+  // ---- CAMERA PERMISSION ----
+  const requestCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach((track) => track.stop()); // stop temp stream
+      setCameraAllowed(true);
+    } catch (err) {
+      setCameraError(
+        "Camera access denied. Please enable it in browser settings."
+      );
     }
-
-    let count = 3;
-    setCountdown(count);
-
-    const interval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        setCountdown(count);
-      } else {
-        clearInterval(interval);
-        setCountdown(null);
-        capture(() => {
-          setTimeout(() => takeNextPhoto(index + 1), 800);
-        });
-      }
-    }, 1000);
   };
 
-  const capture = (callback?: () => void) => {
-    const webcam = webcamRef.current;
-    if (!webcam) return;
+  // ---- CAPTURE LOGIC ----
+  const capturePhoto = async () => {
+    if (!webcamRef.current) return;
 
-    const screenshot = webcam.getScreenshot();
-    if (!screenshot) return;
+    for (let i = 0; i < numPhotos; i++) {
+      for (let c = 3; c > 0; c--) {
+        setCountdown(c);
+        await new Promise((res) => setTimeout(res, 1000));
+      }
+      setCountdown(null);
 
-    const img = new Image();
-    img.src = screenshot;
-    img.onload = () => {
+      const screenshot = webcamRef.current.getScreenshot();
+      if (!screenshot) continue;
+
+      // Mirror image
+      const img = new Image();
+      img.src = screenshot;
+      await new Promise((res) => (img.onload = res));
+
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) continue;
 
-      // Flip horizontally (mirror)
       ctx.translate(img.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(img, 0, 0);
 
-      const mirroredDataUrl = canvas.toDataURL("image/png");
-      setPhotos((prev) => [...prev, mirroredDataUrl]);
-      if (callback) callback();
-    };
+      setPhotos((prev) => [...prev, canvas.toDataURL("image/png")]);
+      await new Promise((res) => setTimeout(res, 1000));
+    }
   };
 
-  /** 📌 Create a vertical collage strip */
-  const downloadStrip = () => {
+  // ---- DOWNLOAD STRIP ----
+  const downloadStrip = async () => {
     if (photos.length === 0) return;
 
-    const imgElements: HTMLImageElement[] = [];
-    let loaded = 0;
+    const photoWidth = 440; // make photo smaller than canvas width
+    const photoHeight = 320;
+    const border = 20; // space around photo
+    const width = 480;
+    const height = (photoHeight + border * 2) * photos.length + 120;
 
-    photos.forEach((src, i) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
-        imgElements[i] = img;
-        loaded++;
-        if (loaded === photos.length) {
-          // Once all images are loaded, build the strip
-          const width = Math.max(...imgElements.map((im) => im.width));
-          const height = imgElements.reduce((sum, im) => sum + im.height, 0);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
+    // ---- Background (same as before) ----
+    if (theme === "white") {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+    } else if (theme === "gradient") {
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, "#ff9a9e");
+      gradient.addColorStop(1, "#fad0c4");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+    } else if (theme === "confetti") {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        ctx.beginPath();
+        ctx.arc(
+          Math.random() * width,
+          Math.random() * height,
+          4,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+      }
+    } else if (theme === "custom" && customBg) {
+      await new Promise<void>((resolve) => {
+        const bg = new Image();
+        bg.src = customBg;
+        bg.onload = () => {
+          ctx.drawImage(bg, 0, 0, width, height);
+          resolve();
+        };
+      });
+    }
 
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
+    // ---- Draw photos with border ----
+    for (let i = 0; i < photos.length; i++) {
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.src = photos[i];
+        img.onload = () => {
+          const y = i * (photoHeight + border * 2) + border;
 
-          let y = 0;
-          imgElements.forEach((im) => {
-            ctx.drawImage(im, 0, y);
-            y += im.height;
-          });
+          // Draw border (white frame effect)
+          ctx.fillStyle = "white";
+          ctx.fillRect(
+            (width - (photoWidth + border * 2)) / 2, // x
+            y - border, // y
+            photoWidth + border * 2,
+            photoHeight + border * 2
+          );
 
-          const stripDataUrl = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = stripDataUrl;
-          link.download = "photobooth-strip.png";
-          link.click();
-        }
-      };
-    });
+          // Draw photo centered inside border
+          ctx.drawImage(
+            img,
+            (width - photoWidth) / 2,
+            y,
+            photoWidth,
+            photoHeight
+          );
+          resolve();
+        };
+      });
+    }
+
+    // ---- Caption ----
+    ctx.fillStyle = "black";
+    ctx.font = "24px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(caption, width / 2, height - 50);
+
+    // ---- Logo ----
+    if (logo) {
+      await new Promise<void>((resolve) => {
+        const logoImg = new Image();
+        logoImg.src = logo;
+        logoImg.onload = () => {
+          const logoSize = 60;
+          ctx.drawImage(
+            logoImg,
+            width / 2 - logoSize / 2,
+            height - 110,
+            logoSize,
+            logoSize
+          );
+          resolve();
+        };
+      });
+    }
+
+    // ---- Download ----
+    const link = document.createElement("a");
+    link.download = "photobooth-strip.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <div className="flex flex-row gap-8">
-        {/* Camera Section - always visible */}
-        <div className="relative flex flex-col items-center gap-4">
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/png"
-            videoConstraints={videoConstraints}
-            className="rounded-xl shadow-lg scale-x-[-1]"
-          />
+      <div className="flex gap-8">
+        {/* ---- LEFT: CAMERA ---- */}
+        <div className="flex flex-col items-center gap-4">
+          {!cameraAllowed ? (
+            <div className="flex flex-col items-center justify-center w-[480px] h-[360px] bg-gray-800 rounded-xl">
+              <p className="text-gray-300 mb-4">
+                Please allow camera access to use the PhotoBooth.
+              </p>
+              <button
+                onClick={requestCamera}
+                className="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700"
+              >
+                🎥 Allow Camera
+              </button>
+              {cameraError && (
+                <p className="mt-2 text-red-400 text-sm">{cameraError}</p>
+              )}
+            </div>
+          ) : (
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              screenshotFormat="image/png"
+              videoConstraints={videoConstraints}
+              className="rounded-xl shadow-lg scale-x-[-1]"
+            />
+          )}
 
-          {/* Countdown Overlay */}
-          {countdown !== null && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-8xl font-bold rounded-xl">
+          {countdown && (
+            <div className="absolute text-6xl font-bold text-white">
               {countdown}
             </div>
           )}
 
-          {/* Mode Selection */}
           <div className="flex gap-2">
-            {[1, 2, 3, 4].map((num) => (
+            {[1, 2, 3, 4].map((n) => (
               <button
-                key={num}
-                onClick={() => setPhotoCount(num)}
-                disabled={isCapturing}
-                className={`px-4 py-2 rounded ${
-                  photoCount === num ? "bg-blue-600" : "bg-gray-600"
-                } hover:bg-blue-700 disabled:opacity-50`}
+                key={n}
+                onClick={() => setNumPhotos(n)}
+                className={`px-3 py-1 rounded ${
+                  numPhotos === n ? "bg-blue-500" : "bg-gray-700"
+                }`}
               >
-                {num} Pic{num > 1 ? "s" : ""}
+                {n} pic{n > 1 ? "s" : ""}
               </button>
             ))}
           </div>
 
-          {/* Capture Button */}
           <button
-            onClick={startCountdown}
-            disabled={isCapturing}
-            className="bg-green-600 px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            onClick={capturePhoto}
+            className="bg-green-600 px-6 py-2 rounded hover:bg-green-700"
           >
-            📸 Take {photoCount} Photo{photoCount > 1 ? "s" : ""}
+            📸 Take Photo(s)
           </button>
         </div>
 
-        {/* Vertical Photo Strip Preview */}
-        <div className="flex flex-col gap-4 items-center bg-gray-900 p-4 rounded-xl shadow-lg min-w-[180px]">
-          {photos.length === 0 && (
-            <p className="text-gray-400 text-sm">No photos yet</p>
-          )}
-          {photos.map((src, idx) => (
-            <img
-              key={idx}
-              src={src}
-              alt={`Captured ${idx + 1}`}
-              className="w-40 rounded-md shadow-md"
+        {/* ---- RIGHT: PREVIEW ---- */}
+        <div className="flex flex-col items-center gap-4 w-[300px]">
+          <div
+            className="rounded-xl p-4 flex flex-col gap-2 items-center justify-start"
+            style={{
+              background:
+                theme === "white"
+                  ? "white"
+                  : theme === "gradient"
+                  ? "linear-gradient(to bottom, #ff9a9e, #fad0c4)"
+                  : theme === "confetti"
+                  ? "#fff"
+                  : customBg
+                  ? `url(${customBg})`
+                  : "white",
+              backgroundSize: "cover",
+            }}
+          >
+            {photos.map((p, i) => (
+              <img
+                key={i}
+                src={p}
+                alt={`Photo ${i + 1}`}
+                className="w-full rounded shadow"
+              />
+            ))}
+            {logo && <img src={logo} alt="Logo" className="w-12 mt-2" />}
+            {caption && (
+              <p className="text-black text-sm font-semibold">{caption}</p>
+            )}
+          </div>
+
+          {/* Controls */}
+          <select
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+            className="bg-gray-800 p-2 rounded"
+          >
+            <option value="white">White</option>
+            <option value="gradient">Gradient</option>
+            <option value="confetti">Confetti</option>
+            <option value="custom">Custom Upload</option>
+          </select>
+
+          {theme === "custom" && (
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => setCustomBg(reader.result as string);
+                reader.readAsDataURL(file);
+              }}
             />
-          ))}
-          {photos.length > 0 && (
-            <button
-              onClick={downloadStrip}
-              className="mt-2 bg-purple-600 px-6 py-2 rounded hover:bg-purple-700"
-            >
-              💾 Download Strip
-            </button>
           )}
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => setLogo(reader.result as string);
+              reader.readAsDataURL(file);
+            }}
+          />
+
+          <input
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Enter caption"
+            className="bg-gray-800 p-2 rounded w-full"
+          />
+
+          <button
+            onClick={downloadStrip}
+            className="bg-purple-600 px-6 py-2 rounded hover:bg-purple-700"
+          >
+            💾 Download Strip
+          </button>
         </div>
       </div>
     </main>
