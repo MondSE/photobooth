@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
+import NextImage from "next/image";
 
 const videoConstraints = {
   width: 480,
@@ -260,14 +261,14 @@ export default function PhotoBooth() {
             }}
           >
             {photos.map((p, i) => (
-              <img
+              <NextImage
                 key={i}
                 src={p}
                 alt={`Photo ${i + 1}`}
                 className="w-full rounded shadow"
               />
             ))}
-            {logo && <img src={logo} alt="Logo" className="w-12 mt-2" />}
+            {logo && <NextImage src={logo} alt="Logo" className="w-12 mt-2" />}
             {caption && (
               <p className="text-black text-sm font-semibold">{caption}</p>
             )}
