@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Image as ImageIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,82 @@ import { Button } from "@/components/ui/button";
  * - Works as a drop-in React component
  * - Customizable via props
  */
+// Hook: Auto-detect user location
+function useUserLocation() {
+  const [location, setLocation] = useState("Locating...");
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocation("Location not available");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+
+        try {
+          // Reverse geocode via OpenStreetMap
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await res.json();
+
+          if (data?.address?.city || data?.address?.town) {
+            setLocation(
+              `${
+                data.address.city || data.address.town
+              }, ${data.address.country_code.toUpperCase()}`
+            );
+          } else {
+            setLocation("Unknown location");
+          }
+        } catch {
+          setLocation("Unknown location");
+        }
+      },
+      async () => {
+        // Fallback: use IP-based lookup
+        try {
+          const res = await fetch("https://ipapi.co/json/");
+          const data = await res.json();
+          setLocation(`${data.city}, ${data.country_name}`);
+        } catch {
+          setLocation("Permission denied");
+        }
+      }
+    );
+  }, []);
+
+  return location;
+}
+
+function useLocalDate(dateString?: string) {
+  const [localDate, setLocalDate] = React.useState("");
+
+  React.useEffect(() => {
+    let date: Date;
+
+    if (dateString) {
+      date = new Date(dateString); // use the passed date
+    } else {
+      date = new Date(); // fallback: current date
+    }
+
+    // format with user's local timezone
+    const formatted = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+      timeZoneName: "short",
+    }).format(date);
+
+    setLocalDate(formatted);
+  }, [dateString]);
+
+  return localDate;
+}
 
 export type PhotoboothCoverProps = {
   title?: string;
@@ -31,13 +107,14 @@ export default function PhotoboothCover({
   title = "Pop & Pose Photobooth",
   tagline = "Tap. Snap. Share. Your event’s memories, captured beautifully.",
   eventName = "Almond & Friends Night",
-  date = "August 25, 2025",
-  location = "Quezon City, PH",
+  date,
   primaryCta = { label: "Open Booth", href: "/camerabooth" },
   secondaryCta = { label: "View Gallery" },
   backgroundImageUrl,
   overlayOpacity = 0.55,
 }: PhotoboothCoverProps) {
+  const localDate = useLocalDate(date); // auto-detect timezone
+  const location = useUserLocation(); // ✅ auto-detected
   const heroBg = backgroundImageUrl || bgUrlFallback;
 
   const container = {
@@ -93,7 +170,7 @@ export default function PhotoboothCover({
           <span className="inline-block h-2 w-2 rounded-full bg-white/80" />
           <span className="font-medium tracking-wide">{eventName}</span>
           <span className="opacity-70">•</span>
-          <span className="opacity-80">{date}</span>
+          <span className="opacity-80">{localDate}</span>
           <span className="opacity-70">•</span>
           <span className="opacity-80">{location}</span>
         </motion.div>
