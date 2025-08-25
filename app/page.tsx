@@ -1,103 +1,221 @@
-import Image from "next/image";
+"use client";
+import React from "react";
+import { motion } from "framer-motion";
+import { Camera, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default function Home() {
+/**
+ * PhotoboothCover
+ * A polished, responsive hero/"web cover" for a photobooth app or event site.
+ * - Tailwind + Framer Motion animations
+ * - Works as a drop-in React component
+ * - Customizable via props
+ */
+
+export type PhotoboothCoverProps = {
+  title?: string;
+  tagline?: string;
+  eventName?: string;
+  date?: string;
+  location?: string;
+  primaryCta?: { label: string; onClick?: () => void; href?: string };
+  secondaryCta?: { label: string; onClick?: () => void; href?: string };
+  backgroundImageUrl?: string; // Optional hero background image
+  overlayOpacity?: number; // 0..1
+};
+
+const bgUrlFallback =
+  "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1800&auto=format&fit=crop";
+
+export default function PhotoboothCover({
+  title = "Pop & Pose Photobooth",
+  tagline = "Tap. Snap. Share. Your event’s memories, captured beautifully.",
+  eventName = "Almond & Friends Night",
+  date = "August 25, 2025",
+  location = "Quezon City, PH",
+  primaryCta = { label: "Open Booth", href: "/camerabooth" },
+  secondaryCta = { label: "View Gallery" },
+  backgroundImageUrl,
+  overlayOpacity = 0.55,
+}: PhotoboothCoverProps) {
+  const heroBg = backgroundImageUrl || bgUrlFallback;
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    },
+  } as const;
+  const item = {
+    hidden: { opacity: 0, y: 12 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 120, damping: 16 },
+    },
+  } as const;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <section className="relative min-h-[78vh] w-full overflow-hidden rounded-3xl bg-black/90 text-white">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBg})` }}
         />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+        {/* Soft gradient + overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(1200px 600px at 80% 10%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(900px 480px at 10% 90%, rgba(255,255,255,0.08), transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity})` }}
+        />
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Floating sparkles */}
+      <Sparkles className="absolute right-6 top-6 opacity-70" />
+
+      {/* Content */}
+      <div className="mx-auto flex max-w-7xl flex-col items-center px-6 pb-20 pt-24 md:pb-28 md:pt-28">
+        {/* Event pill */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs backdrop-blur-md"
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-white/80" />
+          <span className="font-medium tracking-wide">{eventName}</span>
+          <span className="opacity-70">•</span>
+          <span className="opacity-80">{date}</span>
+          <span className="opacity-70">•</span>
+          <span className="opacity-80">{location}</span>
+        </motion.div>
+
+        {/* Headline */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="text-center"
+        >
+          <motion.h1
+            variants={item}
+            className="mx-auto max-w-3xl text-balance text-4xl font-semibold leading-tight md:text-6xl"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {title}
+          </motion.h1>
+          <motion.p
+            variants={item}
+            className="mx-auto mt-4 max-w-2xl text-pretty text-base/7 text-white/85 md:mt-6 md:text-lg/8"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            {tagline}
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div variants={item} className="mt-8 flex items-center gap-3">
+            {primaryCta?.href ? (
+              <Button asChild size="lg" className="rounded-2xl px-6">
+                <a href={primaryCta.href}>
+                  <Camera className="mr-2 h-5 w-5" /> {primaryCta.label}
+                </a>
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="rounded-2xl px-6"
+                onClick={primaryCta?.onClick}
+              >
+                <Camera className="mr-2 h-5 w-5" /> {primaryCta.label}
+              </Button>
+            )}
+
+            {secondaryCta?.href ? (
+              <Button
+                asChild
+                variant="secondary"
+                size="lg"
+                className="rounded-2xl bg-white/10 text-white hover:bg-white/20"
+              >
+                <a href={secondaryCta.href}>
+                  <ImageIcon className="mr-2 h-5 w-5" /> {secondaryCta.label}
+                </a>
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="lg"
+                className="rounded-2xl bg-white/10 text-white hover:bg-white/20"
+                onClick={secondaryCta?.onClick}
+              >
+                <ImageIcon className="mr-2 h-5 w-5" /> {secondaryCta.label}
+              </Button>
+            )}
+          </motion.div>
+        </motion.div>
+
+        {/* Mock camera card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+          className="mt-12 w-full max-w-5xl"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <div className="relative mx-auto aspect-[16/9] w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-2xl backdrop-blur">
+            {/* Fake status bar */}
+            <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/30 to-transparent px-4 py-3 text-xs text-white/90">
+              <div className="inline-flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-400" />
+                <span>Live Preview</span>
+              </div>
+              <div className="opacity-70">00:00:00</div>
+            </div>
+
+            {/* Grid overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.07)_1px,transparent_1px)] bg-[size:24px_24px]" />
+
+            {/* Center capture button */}
+            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3 p-4">
+              <button className="rounded-full border-2 border-white/80 bg-white p-2 shadow">
+                <div className="h-12 w-12 rounded-full border-4 border-white/70 bg-black/30" />
+              </button>
+              <button className="rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur hover:bg-white/20">
+                Switch
+              </button>
+            </div>
+
+            {/* Depth gradient bottom */}
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Corner decorations */}
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.18]">
+        <div className="absolute -left-20 -top-20 h-80 w-80 rounded-full bg-fuchsia-400 blur-3xl" />
+        <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-cyan-400 blur-3xl" />
+      </div>
+    </section>
   );
 }
+
+/**
+ * Usage example (JSX):
+ *
+ * <PhotoboothCover
+ *   title="Snap & Smile Photobooth"
+ *   tagline="Instant prints, instant smiles — perfect for weddings, birthdays, and company events."
+ *   eventName="Bryllim Anniversary Bash"
+ *   date="Sept 14, 2025"
+ *   location="Taguig City, PH"
+ *   primaryCta={{ label: "Open Booth", href: "/booth" }}
+ *   secondaryCta={{ label: "View Gallery", href: "/gallery" }}
+ *   backgroundImageUrl="/images/party-bg.jpg"
+ * />
+ */

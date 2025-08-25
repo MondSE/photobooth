@@ -1,5 +1,4 @@
 {
-  "homepage": "https://mondse.github.io/photobooth",
   "name": "web-photobooth",
   "version": "0.1.0",
   "private": true,
@@ -12,10 +11,16 @@
     "deploy": "next build && gh-pages -d out"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.541.0",
+    "motion": "^12.23.12",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-webcam": "^7.2.0"
+    "react-webcam": "^7.2.0",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -27,6 +32,7 @@
     "eslint-config-next": "15.3.5",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4",
+    "tw-animate-css": "^1.3.7",
     "typescript": "^5"
   }
 }
