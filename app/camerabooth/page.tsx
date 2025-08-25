@@ -313,7 +313,7 @@ export default function PhotoBooth() {
               {/* Photos stacked vertically with scroll if overflow */}
               <div className="flex flex-col gap-2 h-full p-4">
                 {photos.map((photo, index) => (
-                  <img
+                  <NextImage
                     key={index}
                     src={photo}
                     alt={`Captured ${index + 1}`}
@@ -324,7 +324,7 @@ export default function PhotoBooth() {
 
               {/* Logo at bottom-center */}
               {logo && (
-                <img
+                <NextImage
                   src={logo}
                   alt="Logo"
                   className="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 object-contain"

@@ -95,7 +95,6 @@ export type PhotoboothCoverProps = {
   date?: string;
   location?: string;
   primaryCta?: { label: string; onClick?: () => void; href?: string };
-  secondaryCta?: { label: string; onClick?: () => void; href?: string };
   backgroundImageUrl?: string; // Optional hero background image
   overlayOpacity?: number; // 0..1
 };
@@ -109,7 +108,6 @@ export default function PhotoboothCover({
   eventName = "You & Friends Night",
   date,
   primaryCta = { label: "Open Booth", href: "/camerabooth" },
-  secondaryCta = { label: "View Gallery" },
   backgroundImageUrl,
   overlayOpacity = 0.55,
 }: PhotoboothCoverProps) {
@@ -196,7 +194,10 @@ export default function PhotoboothCover({
           </motion.p>
 
           {/* CTAs */}
-          <motion.div variants={item} className="mt-8 flex items-center gap-3">
+          <motion.div
+            variants={item}
+            className="mt-8 items-center gap-3 center"
+          >
             {primaryCta?.href ? (
               <Button asChild size="lg" className="rounded-2xl px-6">
                 <a href={primaryCta.href}>
@@ -210,28 +211,6 @@ export default function PhotoboothCover({
                 onClick={primaryCta?.onClick}
               >
                 <Camera className="mr-2 h-5 w-5" /> {primaryCta.label}
-              </Button>
-            )}
-
-            {secondaryCta?.href ? (
-              <Button
-                asChild
-                variant="secondary"
-                size="lg"
-                className="rounded-2xl bg-white/10 text-white hover:bg-white/20"
-              >
-                <a href={secondaryCta.href}>
-                  <ImageIcon className="mr-2 h-5 w-5" /> {secondaryCta.label}
-                </a>
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                size="lg"
-                className="rounded-2xl bg-white/10 text-white hover:bg-white/20"
-                onClick={secondaryCta?.onClick}
-              >
-                <ImageIcon className="mr-2 h-5 w-5" /> {secondaryCta.label}
               </Button>
             )}
           </motion.div>
@@ -281,18 +260,3 @@ export default function PhotoboothCover({
     </section>
   );
 }
-
-/**
- * Usage example (JSX):
- *
- * <PhotoboothCover
- *   title="Snap & Smile Photobooth"
- *   tagline="Instant prints, instant smiles — perfect for weddings, birthdays, and company events."
- *   eventName="Bryllim Anniversary Bash"
- *   date="Sept 14, 2025"
- *   location="Taguig City, PH"
- *   primaryCta={{ label: "Open Booth", href: "/booth" }}
- *   secondaryCta={{ label: "View Gallery", href: "/gallery" }}
- *   backgroundImageUrl="/images/party-bg.jpg"
- * />
- */
