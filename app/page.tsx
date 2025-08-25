@@ -106,7 +106,7 @@ const bgUrlFallback =
 export default function PhotoboothCover({
   title = "Pop & Pose Photobooth",
   tagline = "Tap. Snap. Share. Your event’s memories, captured beautifully.",
-  eventName = "Almond & Friends Night",
+  eventName = "You & Friends Night",
   date,
   primaryCta = { label: "Open Booth", href: "/camerabooth" },
   secondaryCta = { label: "View Gallery" },
