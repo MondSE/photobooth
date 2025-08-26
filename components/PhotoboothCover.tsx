@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Image as Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 /**
  * PhotoboothCover
@@ -101,7 +102,7 @@ const bgUrlFallback =
 
 export default function PhotoboothCover({
   date,
-  primaryCta = { label: "Open Booth", href: "/photobooth/camerabooth" },
+  primaryCta = { label: "Open Booth", href: "/camerabooth" },
   backgroundImageUrl,
   overlayOpacity = 0.55,
 }: PhotoboothCoverProps) {
@@ -194,9 +195,9 @@ export default function PhotoboothCover({
           >
             {primaryCta?.href ? (
               <Button asChild size="lg" className="rounded-2xl px-6">
-                <a href={primaryCta.href}>
+                <Link href={primaryCta.href}>
                   <Camera className="mr-2 h-5 w-5" /> {primaryCta.label}
-                </a>
+                </Link>
               </Button>
             ) : (
               <Button
