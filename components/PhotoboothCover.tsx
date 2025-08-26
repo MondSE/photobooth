@@ -101,7 +101,7 @@ const bgUrlFallback =
 
 export default function PhotoboothCover({
   date,
-  primaryCta = { label: "Open Booth", href: "../camerabooth" },
+  primaryCta = { label: "Open Booth", href: "/photobooth/camerabooth" },
   backgroundImageUrl,
   overlayOpacity = 0.55,
 }: PhotoboothCoverProps) {
