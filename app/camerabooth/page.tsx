@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
-import NextImage from "next/image";
 
 const videoConstraints = {
   width: 1280,
@@ -22,12 +21,13 @@ export default function PhotoBooth() {
   const [customBg, setCustomBg] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [caption, setCaption] = useState("My Photo Booth ✨");
+  const [flash, setFlash] = useState(false); // 🔥 Flash state
 
   // ---- CAMERA PERMISSION ----
   const requestCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach((track) => track.stop()); // stop temp stream
+      stream.getTracks().forEach((track) => track.stop());
       setCameraAllowed(true);
     } catch (err) {
       console.error("Camera error:", err);
@@ -40,8 +40,6 @@ export default function PhotoBooth() {
   // ---- CAPTURE LOGIC ----
   const capturePhoto = async () => {
     if (!webcamRef.current) return;
-
-    // 🔹 Clear old previews
     setPhotos([]);
 
     for (let i = 0; i < numPhotos; i++) {
@@ -51,10 +49,13 @@ export default function PhotoBooth() {
       }
       setCountdown(null);
 
+      // 👉 Trigger flash after countdown
+      setFlash(true);
+      setTimeout(() => setFlash(false), 200);
+
       const screenshot = webcamRef.current.getScreenshot();
       if (!screenshot) continue;
 
-      // Mirror image
       const img = new Image();
       img.src = screenshot;
       await new Promise<void>((resolve) => {
@@ -81,10 +82,13 @@ export default function PhotoBooth() {
   const downloadStrip = async () => {
     if (photos.length === 0) return;
 
-    const photoWidth = 440; // make photo smaller than canvas width
-    const photoHeight = 320;
-    const border = 20; // space around photo
-    const width = 480;
+    const screenWidth = window.innerWidth;
+    const width = Math.min(480, screenWidth - 40);
+
+    const photoWidth = Math.floor(width * 0.9);
+    const photoHeight = Math.floor(photoWidth * 0.72);
+    const border = Math.floor(width * 0.05);
+
     const height = (photoHeight + border * 2) * photos.length + 120;
 
     const canvas = document.createElement("canvas");
@@ -93,7 +97,7 @@ export default function PhotoBooth() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // ---- Background (same as before) ----
+    // Background themes
     if (theme === "white") {
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, width, height);
@@ -129,24 +133,20 @@ export default function PhotoBooth() {
       });
     }
 
-    // ---- Draw photos with border ----
+    // Photos
     for (let i = 0; i < photos.length; i++) {
       await new Promise<void>((resolve) => {
         const img = new Image();
         img.src = photos[i];
         img.onload = () => {
           const y = i * (photoHeight + border * 2) + border;
-
-          // Draw border (white frame effect)
           ctx.fillStyle = "white";
           ctx.fillRect(
-            (width - (photoWidth + border * 2)) / 2, // x
-            y - border, // y
+            (width - (photoWidth + border * 2)) / 2,
+            y - border,
             photoWidth + border * 2,
             photoHeight + border * 2
           );
-
-          // Draw photo centered inside border
           ctx.drawImage(
             img,
             (width - photoWidth) / 2,
@@ -159,19 +159,19 @@ export default function PhotoBooth() {
       });
     }
 
-    // ---- Caption ----
+    // Caption
     ctx.fillStyle = "black";
-    ctx.font = "24px sans-serif";
+    ctx.font = `${Math.floor(width * 0.05)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.fillText(caption, width / 2, height - 50);
 
-    // ---- Logo ----
+    // Logo
     if (logo) {
       await new Promise<void>((resolve) => {
         const logoImg = new Image();
         logoImg.src = logo;
         logoImg.onload = () => {
-          const logoSize = 60;
+          const logoSize = Math.floor(width * 0.15);
           ctx.drawImage(
             logoImg,
             width / 2 - logoSize / 2,
@@ -184,7 +184,6 @@ export default function PhotoBooth() {
       });
     }
 
-    // ---- Download ----
     const link = document.createElement("a");
     link.download = "photobooth-strip.png";
     link.href = canvas.toDataURL("image/png");
@@ -192,27 +191,26 @@ export default function PhotoBooth() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <div className="flex gap-8">
+    <main className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+      <div className="flex flex-col md:flex-row gap-8 w-full max-w-7xl">
         {/* ---- LEFT: CAMERA ---- */}
-        <div className="relative inline-block">
-          {/* Camera */}
+        <div className="relative flex-1 w-full max-w-full rounded-xl overflow-hidden">
           {cameraAllowed ? (
             <Webcam
               ref={webcamRef}
               audio={false}
               screenshotFormat="image/png"
               videoConstraints={videoConstraints}
-              className="rounded-xl shadow-lg scale-x-[-1]"
+              className="rounded-xl shadow-lg scale-x-[-1] w-full h-auto"
             />
           ) : (
-            <div className="flex flex-col items-center justify-center w-[1280px] h-[720px] bg-gray-800 rounded-xl">
-              <p className="text-gray-300 mb-4">
+            <div className="flex flex-col items-center justify-center w-full aspect-video bg-gray-800 rounded-xl">
+              <p className="text-gray-300 mb-4 text-center">
                 Please allow camera access to use the PhotoBooth.
               </p>
               <button
                 onClick={requestCamera}
-                className="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700"
+                className="bg-blue-600 px-4 sm:px-6 py-2 rounded hover:bg-blue-700 w-full sm:w-auto text-sm sm:text-base"
               >
                 🎥 Allow Camera
               </button>
@@ -222,7 +220,12 @@ export default function PhotoBooth() {
             </div>
           )}
 
-          {/* Theme Selector in top-right */}
+          {/* Flash effect */}
+          {flash && (
+            <div className="absolute inset-0 bg-white animate-fade-out pointer-events-none rounded-xl" />
+          )}
+
+          {/* Theme Selector */}
           <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
             <select
               value={theme}
@@ -251,7 +254,7 @@ export default function PhotoBooth() {
             )}
           </div>
 
-          {/* Logo Upload Button (bottom-left) */}
+          {/* Logo Upload */}
           <div className="absolute bottom-2 left-2">
             <label className="bg-blue-600 text-white text-xs px-3 py-1 rounded cursor-pointer shadow hover:bg-blue-700">
               Upload Logo
@@ -270,35 +273,35 @@ export default function PhotoBooth() {
             </label>
           </div>
 
-          {/* Countdown overlay */}
+          {/* Countdown */}
           {countdown && (
             <div className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-white">
               {countdown}
             </div>
           )}
 
-          {/* Shutter button at bottom center */}
+          {/* Shutter Button */}
           <button
             onClick={capturePhoto}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-white/80 bg-white p-2 shadow"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-white/80 bg-white p-1 sm:p-2 shadow"
           >
-            <div className="h-16 w-16 rounded-full border-4 border-white/70 bg-black/30" />
+            <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-4 border-white/70 bg-black/30" />
           </button>
 
-          {/* Photo count selector - bottom right INSIDE camera */}
-          <div className="absolute bottom-4 right-4 flex items-center bg-black/50 rounded-lg px-3 py-2">
+          {/* Photo Count */}
+          <div className="absolute bottom-4 right-2 sm:right-4 flex items-center bg-black/50 rounded-lg px-2 sm:px-3 py-1 sm:py-2 text-sm sm:text-base">
             <button
               onClick={() => setNumPhotos((prev) => (prev > 1 ? prev - 1 : 4))}
-              className="text-white px-2"
+              className="text-white px-1 sm:px-2"
             >
               ◀
             </button>
-            <span className="text-white font-bold w-8 text-center">
+            <span className="text-white font-bold w-6 sm:w-8 text-center">
               {numPhotos}
             </span>
             <button
               onClick={() => setNumPhotos((prev) => (prev < 4 ? prev + 1 : 1))}
-              className="text-white px-2"
+              className="text-white px-1 sm:px-2"
             >
               ▶
             </button>
@@ -306,14 +309,12 @@ export default function PhotoBooth() {
         </div>
 
         {/* ---- RIGHT: PREVIEW ---- */}
-        <div className="flex flex-col items-center gap-4 w-[300px]">
-          {/* Preview Section */}
+        <div className="flex flex-col items-center gap-4 w-full md:w-[300px]">
           {photos.length > 0 && (
-            <div className="relative bg-white rounded-lg shadow-lg inline-block h-full w-64 ">
-              {/* Photos stacked vertically with scroll if overflow */}
-              <div className="flex flex-col gap-2 h-full p-4">
+            <div className="relative bg-white rounded-lg shadow-lg inline-block w-full md:w-64 pb-12">
+              <div className="flex flex-col gap-2 p-4">
                 {photos.map((photo, index) => (
-                  <NextImage
+                  <img
                     key={index}
                     src={photo}
                     alt={`Captured ${index + 1}`}
@@ -322,31 +323,31 @@ export default function PhotoBooth() {
                 ))}
               </div>
 
-              {/* Logo at bottom-center */}
+              {/* Logo */}
               {logo && (
-                <NextImage
+                <img
                   src={logo}
                   alt="Logo"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 object-contain"
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 w-16 h-16 object-contain"
                 />
               )}
 
-              {/* Download Button floating top-right */}
+              {/* Download button */}
               <button
                 onClick={downloadStrip}
-                className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow"
+                className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 py-1 rounded shadow text-xs sm:text-sm"
               >
                 ⬇
               </button>
 
-              {/* Caption pinned at bottom */}
+              {/* Caption area */}
               <div
                 contentEditable
                 suppressContentEditableWarning
                 onInput={(e) =>
                   setCaption((e.target as HTMLDivElement).innerText)
                 }
-                className="absolute bottom-2 left-0 right-0 text-black text-sm font-semibold text-center outline-none bg-transparent cursor-text"
+                className="absolute bottom-2 left-0 right-0 px-2 text-black text-sm sm:text-base font-semibold text-center outline-none bg-transparent cursor-text"
               >
                 {caption}
               </div>
