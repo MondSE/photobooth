@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
+import ImageNext from "next/image";
 
 const videoConstraints = {
   width: 1280,
@@ -22,7 +23,6 @@ export default function PhotoBooth() {
   const [logo, setLogo] = useState<string | null>(null);
   const [caption, setCaption] = useState("My Photo Booth ✨");
   const [flash, setFlash] = useState(false); // 🔥 Flash state
-  const divRef = useRef<HTMLDivElement>(null);
 
   // ---- CAMERA PERMISSION ----
   const requestCamera = async () => {
@@ -315,21 +315,27 @@ export default function PhotoBooth() {
             <div className="relative bg-white rounded-lg shadow-lg inline-block w-full md:w-64 pb-12">
               <div className="flex flex-col gap-2 p-4">
                 {photos.map((photo, index) => (
-                  <img
+                  <ImageNext
                     key={index}
                     src={photo}
                     alt={`Captured ${index + 1}`}
+                    width={500} // ✅ Required for next/image
+                    height={500} // ✅ Required
                     className="w-full h-auto object-cover rounded-md border"
+                    unoptimized // ✅ Important for base64 / data URL
                   />
                 ))}
               </div>
 
               {/* Logo */}
               {logo && (
-                <img
+                <ImageNext
                   src={logo}
                   alt="Logo"
-                  className="absolute bottom-16 left-1/2 -translate-x-1/2 w-16 h-16 object-contain"
+                  width={64}
+                  height={64}
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 object-contain"
+                  unoptimized // ✅ Avoid Next.js trying to optimize data URL
                 />
               )}
 
