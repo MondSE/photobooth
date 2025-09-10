@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 
 const videoConstraints = {
@@ -22,6 +22,7 @@ export default function PhotoBooth() {
   const [logo, setLogo] = useState<string | null>(null);
   const [caption, setCaption] = useState("My Photo Booth ✨");
   const [flash, setFlash] = useState(false); // 🔥 Flash state
+  const divRef = useRef<HTMLDivElement>(null);
 
   // ---- CAMERA PERMISSION ----
   const requestCamera = async () => {
@@ -341,16 +342,13 @@ export default function PhotoBooth() {
               </button>
 
               {/* Caption area */}
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                onInput={(e) =>
-                  setCaption((e.target as HTMLDivElement).innerText)
-                }
-                className="absolute bottom-2 left-0 right-0 px-2 text-black text-sm sm:text-base font-semibold text-center outline-none bg-transparent cursor-text"
-              >
-                {caption}
-              </div>
+              <input
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Write a caption..."
+                className="absolute bottom-2 left-0 right-0 px-2 text-black text-sm sm:text-base font-semibold text-center outline-none bg-transparent border-none"
+              />
             </div>
           )}
         </div>
